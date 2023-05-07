@@ -20,9 +20,7 @@ class DjangoAuthBackend(AuthBackend):
 
     # Helper methods
     def get_user(self, request):
-        session_key = request.cookies.get('sessionid', '')
-
-        if session_key:
+        if session_key := request.cookies.get('sessionid', ''):
             try:
                 session = Session.objects.get(session_key=session_key)
                 uid = session.get_decoded().get('_auth_user_id')
@@ -138,7 +136,7 @@ class DjangoAuthBackend(AuthBackend):
         method_name = request.msg.data['method'].split('__')[1]
         app_label, _ = method_name.split('.')
         action, model_name = _.split('_')
-        model = apps.get_model('{}.{}'.format(app_label, model_name))
+        model = apps.get_model(f'{app_label}.{model_name}')
 
         if action == 'view':
             return await self._model_view(request, model)
@@ -209,7 +207,7 @@ class DjangoAuthBackend(AuthBackend):
         if self.generic_orm_methods:
             for permission_name in request.user.get_all_permissions():
                 action = permission_name.split('.')[1].split('_')[0]
-                method_name = 'db__{}'.format(permission_name)
+                method_name = f'db__{permission_name}'
 
                 if action in ('view', 'add', 'change', 'delete', ):
                     request.methods[method_name] = JsonRpcMethod(

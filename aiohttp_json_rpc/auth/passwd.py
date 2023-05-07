@@ -57,7 +57,7 @@ class PasswdAuthBackend:
 
         salt = salt or os.urandom(16)
 
-        if not type(password) == bytes:
+        if type(password) != bytes:
             password = password.encode()
 
         password_hash = hashlib.pbkdf2_hmac('sha256', password, salt, rounds)
@@ -85,13 +85,12 @@ class PasswdAuthBackend:
     def _set_password(self, username, password, salt=None, rounds=100000,
                       old_password=''):
 
-        if old_password:
-            if not self._login(username, old_password)[0]:
-                return False
+        if old_password and not self._login(username, old_password)[0]:
+            return False
 
         salt = salt or os.urandom(16)
 
-        if not type(password) == bytes:
+        if type(password) != bytes:
             password = password.encode()
 
         password_hash = hashlib.pbkdf2_hmac('sha256', password, salt, rounds)
@@ -105,7 +104,7 @@ class PasswdAuthBackend:
         return True
 
     def _login(self, username, password):
-        if not type(password) == bytes:
+        if type(password) != bytes:
             password = password.encode()
 
         if username in self.user:
@@ -124,12 +123,9 @@ class PasswdAuthBackend:
         if hasattr(method, 'login_required') and not request.user:
             return False
 
-        if hasattr(method, 'permissions_required') and not (
-              len(request.permissions & method.permissions_required) ==
-              len(method.permissions_required)):
-            return False
-
-        return True
+        return not hasattr(method, 'permissions_required') or len(
+            request.permissions & method.permissions_required
+        ) == len(method.permissions_required)
 
     def prepare_request(self, request):
         if not hasattr(request, 'user'):

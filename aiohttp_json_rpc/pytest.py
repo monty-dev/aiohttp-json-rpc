@@ -12,7 +12,7 @@ try:
         os.environ.get('DJANGO_SETTINGS_MODULE'))
 
     django_wsgi_application = importlib.import_module(
-        '.'.join(django_settings.WSGI_APPLICATION.split('.')[0:-1])
+        '.'.join(django_settings.WSGI_APPLICATION.split('.')[:-1])
     ).application
 
     DJANGO = True
@@ -38,7 +38,7 @@ class RpcContext(object):
         self.clients = []
 
     async def make_clients(self, count, cookies=None):
-        clients = [JsonRpcClient() for i in range(count)]
+        clients = [JsonRpcClient() for _ in range(count)]
 
         await asyncio.gather(
             *[i.connect(self.host, self.port, url=self.url,
@@ -93,9 +93,9 @@ def rpc_context(event_loop, unused_tcp_port):
     rpc = JsonRpc(loop=event_loop, max_workers=4)
     rpc_route = ('*', '/rpc', rpc.handle_request)
 
-    for context in gen_rpc_context(event_loop, 'localhost', unused_tcp_port,
-                                   rpc, rpc_route):
-        yield context
+    yield from gen_rpc_context(
+        event_loop, 'localhost', unused_tcp_port, rpc, rpc_route
+    )
 
 
 @pytest.yield_fixture
@@ -113,10 +113,9 @@ def django_rpc_context(db, event_loop, unused_tcp_port):
         ('*', '/{path_info:.*}', WSGIHandler(django_wsgi_application)),
     ]
 
-    for context in gen_rpc_context(event_loop, 'localhost',
-                                   unused_tcp_port, rpc, rpc_route,
-                                   routes):
-        yield context
+    yield from gen_rpc_context(
+        event_loop, 'localhost', unused_tcp_port, rpc, rpc_route, routes
+    )
 
 
 @pytest.fixture

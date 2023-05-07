@@ -6,4 +6,4 @@ class Item(models.Model):
     number = models.IntegerField()
 
     def __str__(self):
-        return 'client_id: {}, number: {}'.format(self.client_id, self.number)
+        return f'client_id: {self.client_id}, number: {self.number}'

@@ -68,8 +68,8 @@ class JsonRpcMethod:
         args = []
 
         for i, v in enumerate(self.args[::-1]):
-            if self.defaults and not i >= len(self.defaults):
-                args.append('{}={}'.format(v, repr(self.defaults[i])))
+            if self.defaults and i < len(self.defaults):
+                args.append(f'{v}={repr(self.defaults[i])}')
 
             else:
                 args.append(v)
@@ -79,17 +79,14 @@ class JsonRpcMethod:
             *args[::-1],
         ]
 
-        self._repr_str = 'JsonRpcMethod({}({}))'.format(
-            self.method.__name__,
-            ', '.join(args),
-        )
+        self._repr_str = f"JsonRpcMethod({self.method.__name__}({', '.join(args)}))"
 
     def __repr__(self):
         return self._repr_str
 
     async def __call__(self, http_request, rpc, msg):
         params = msg.data['params']
-        method_params = dict()
+        method_params = {}
 
         # convert args
         if params is None:
@@ -122,11 +119,13 @@ class JsonRpcMethod:
                 for validator in validator_list:
                     if isinstance(validator, type):
                         if not isinstance(method_params[arg_name], validator):
-                            raise RpcInvalidParamsError(message="'{}' has to be '{}'".format(arg_name, validator.__name__))  # NOQA
+                            raise RpcInvalidParamsError(
+                                message=f"'{arg_name}' has to be '{validator.__name__}'"
+                            )
 
                     elif isinstance(validator, types.FunctionType):
                         if not validator(method_params[arg_name]):
-                            raise RpcInvalidParamsError(message="'{}': validation error".format(arg_name))  # NOQA
+                            raise RpcInvalidParamsError(message=f"'{arg_name}': validation error")
 
         # credentials
         if 'request' in self.argspec.args:
@@ -177,7 +176,7 @@ class JsonRpc(object):
         name = name or method.__name__
 
         if prefix:
-            name = '{}__{}'.format(prefix, name)
+            name = f'{prefix}__{name}'
 
         self.methods[name] = JsonRpcMethod(method)
 
@@ -201,10 +200,10 @@ class JsonRpc(object):
 
     def add_methods(self, *args, prefix=''):
         for arg in args:
-            if not (type(arg) == tuple and len(arg) >= 2):
+            if type(arg) != tuple or len(arg) < 2:
                 raise ValueError('invalid format')
 
-            if not type(arg[0]) == str:
+            if type(arg[0]) != str:
                 raise ValueError('prefix has to be str')
 
             prefix_ = prefix or arg[0]
@@ -226,12 +225,7 @@ class JsonRpc(object):
                 raise ValueError('Topic has to be string or tuple')
 
             # find name
-            if type(topic) == str:
-                name = topic
-
-            else:
-                name = topic[0]
-
+            name = topic if type(topic) == str else topic[0]
             # find and apply decorators
             def func(request):
                 return True
@@ -239,7 +233,7 @@ class JsonRpc(object):
             if type(topic) == tuple and len(topic) > 1:
                 decorators = topic[1]
 
-                if not type(decorators) == tuple:
+                if type(decorators) != tuple:
                     decorators = (decorators, )
 
                 for decorator in decorators:
@@ -368,7 +362,7 @@ class JsonRpc(object):
             self.logger.debug('waiting for messages')
             raw_msg = await ws.receive()
 
-            if not raw_msg.type == aiohttp.WSMsgType.TEXT:
+            if raw_msg.type != aiohttp.WSMsgType.TEXT:
                 continue
 
             self.logger.debug('raw msg received: %s', raw_msg.data)
