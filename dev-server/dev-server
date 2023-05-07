@@ -34,7 +34,7 @@ client = JsonRpcClient()
 
 
 async def setup_client(client):
-    await client.connect_url('ws://{}:{}/rpc'.format(HOST, PORT))
+    await client.connect_url(f'ws://{HOST}:{PORT}/rpc')
 
 
 # DEV-SERVER CODE #############################################################

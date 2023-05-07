@@ -21,8 +21,7 @@ async def watchdog(futures):
         if not future.done():
             future.cancel()
 
-            logger.error(
-                'Watchdog: killed Client #{}'.format(future.client_id))
+            logger.error(f'Watchdog: killed Client #{future.client_id}')
 
     return 0
 
@@ -83,28 +82,24 @@ async def add(request):
         raise RpcInvalidParamsError
 
     try:
-        logger.debug(
-            'Client #{}: try open transaction'.format(client_id))
+        logger.debug(f'Client #{client_id}: try open transaction')
 
         with transaction.atomic():
-            logger.debug(
-                'Client #{}: transaction opened'.format(client_id))
+            logger.debug(f'Client #{client_id}: transaction opened')
 
             for number in numbers:
                 item = Item.objects.create(number=number, client_id=client_id)
 
-                logger.debug(
-                    'Client #{}: created {}'.format(client_id, repr(item)))
+                logger.debug(f'Client #{client_id}: created {repr(item)}')
 
                 await asyncio.sleep(0.1)
 
-        logger.debug(
-            'Client #{}: transaction commited'.format(client_id))
+        logger.debug(f'Client #{client_id}: transaction commited')
 
     except Exception as e:
         logger.error(
-            'Client #{}: transaction aborted because of {}({})'.format(
-                client_id, e.__class__.__name__, e))
+            f'Client #{client_id}: transaction aborted because of {e.__class__.__name__}({e})'
+        )
 
         return 1
 

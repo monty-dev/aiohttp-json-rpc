@@ -63,7 +63,7 @@ def generate_view_permissions():
 
     for model in apps.get_models():
         Permission.objects.get_or_create(
-            codename='view_{}'.format(model._meta.model_name),
-            name='Can view {}'.format(model._meta.verbose_name),
+            codename=f'view_{model._meta.model_name}',
+            name=f'Can view {model._meta.verbose_name}',
             content_type=ContentType.objects.get_for_model(model),
         )

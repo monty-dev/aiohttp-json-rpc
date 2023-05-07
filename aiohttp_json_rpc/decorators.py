@@ -4,10 +4,7 @@ def raw_response(function=None):
 
         return function
 
-    if function:
-        return decorator(function)
-
-    return decorator
+    return decorator(function) if function else decorator
 
 
 def validate(**kwargs):

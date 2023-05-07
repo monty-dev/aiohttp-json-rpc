@@ -42,12 +42,12 @@ class JsonRpcClient:
             name = method.__name__
 
             if prefix:
-                name = '{}__{}'.format(prefix, name)
+                name = f'{prefix}__{name}'
 
             self._methods[name] = method
 
     async def _handle_request(self, msg):
-        if not msg.data['method'] in self._methods:
+        if msg.data['method'] not in self._methods:
             response = encode_error(
                 exceptions.RpcMethodNotFoundError(
                     msg_id=msg.data.get('id', None)))

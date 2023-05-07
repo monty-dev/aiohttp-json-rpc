@@ -15,15 +15,12 @@ def login_required(function=None):
 
         return function
 
-    if function:
-        return decorator(function)
-
-    return decorator
+    return decorator(function) if function else decorator
 
 
 def permission_required(permission):
     def decorator(function):
-        if not type(permission) == str:
+        if type(permission) != str:
             raise ValueError('permission has to be a string')
 
         if not hasattr(function, 'permissions_required'):

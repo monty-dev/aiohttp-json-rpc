@@ -66,11 +66,11 @@ def decode_msg(raw_msg):
         raise RpcParseError
 
     # check jsonrpc version
-    if 'jsonrpc' not in msg_data or not msg_data['jsonrpc'] == JSONRPC:
+    if 'jsonrpc' not in msg_data or msg_data['jsonrpc'] != JSONRPC:
         raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
     # check requierd fields
-    if not len(set(['error', 'result', 'method']) & set(msg_data)) == 1:
+    if len({'error', 'result', 'method'} & set(msg_data)) != 1:
         raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
     # find message type
@@ -103,11 +103,11 @@ def decode_msg(raw_msg):
             msg_data['id'] = None
 
     # Response Objects
-    if msg_type in (JsonRpcMsgTyp.RESULT, JsonRpcMsgTyp.ERROR):
-
-        # every Response object has to define an id
-        if 'id' not in msg_data:
-            raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
+    if (
+        msg_type in (JsonRpcMsgTyp.RESULT, JsonRpcMsgTyp.ERROR)
+        and 'id' not in msg_data
+    ):
+        raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
     # Error objects
     if msg_type == JsonRpcMsgTyp.ERROR:
@@ -117,11 +117,11 @@ def decode_msg(raw_msg):
             raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
         # the error field has to define 'code' and 'message'
-        if not len(set(['code', 'message']) & set(msg_data['error'])) == 2:
+        if len({'code', 'message'} & set(msg_data['error'])) != 2:
             raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
         # the error code has to be in the specified ranges
-        if not msg_data['error']['code'] in RpcError.lookup_table.keys():
+        if msg_data['error']['code'] not in RpcError.lookup_table.keys():
             raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
         # set empty 'data' field if not set
