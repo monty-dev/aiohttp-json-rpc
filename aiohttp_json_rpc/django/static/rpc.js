@@ -48,30 +48,28 @@ function RPC(host) {
                 console.log('RPC <<', data);
             }
 
-            if('method' in data) {
-                if('id' in data && data.id != null) {  // request
-                    this._rpc._handle_request(data);
-
-                } else {  // notification
-                    if(data.method in this._rpc._topic_handler) {
-                        this._rpc._topic_handler[data.method](data.params);
-                    }
-                }
-
-            } else {
-                if('id' in data && data.id in this._rpc._pending) {
-                    if('error' in data) {  // error
-                        this._rpc._pending[data.id].error_handler(
-                            data.error, this._rpc);
-
-                    } else if('result' in data) {  // result
-                            this._rpc._pending[data.id].success_handler(
-                                data.result, this._rpc);
-                    }
-
-                    delete this._rpc._pending[data.id];
-                }
-            }
+            if ('method' in data) {
+                            if ('id' in data && data.id != null) {  // request
+                                                            this._rpc._handle_request(data);
+                                        
+                                                        }
+                            else if (data.method in this._rpc._topic_handler) {
+                                                                this._rpc._topic_handler[data.method](data.params);
+                                                            }
+            
+                        }
+            else if ('id' in data && data.id in this._rpc._pending) {
+                                if('error' in data) {  // error
+                                    this._rpc._pending[data.id].error_handler(
+                                        data.error, this._rpc);
+            
+                                } else if('result' in data) {  // result
+                                        this._rpc._pending[data.id].success_handler(
+                                            data.result, this._rpc);
+                                }
+            
+                                delete this._rpc._pending[data.id];
+                            }
         };
     };
 
@@ -123,11 +121,13 @@ function RPC(host) {
         }
 
         // custom handler
-        if(success_handler)
-            this._pending[id].success_handler = success_handler;
+        if (success_handler) {
+          this._pending[id].success_handler = success_handler;
+        }
 
-        if(error_handler)
-            this._pending[id].error_handler = error_handler;
+        if (error_handler) {
+          this._pending[id].error_handler = error_handler;
+        }
 
         var request_data = JSON.stringify(request);
         this._ws.send(request_data);

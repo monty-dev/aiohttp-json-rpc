@@ -57,7 +57,7 @@ class PasswdAuthBackend:
 
         salt = salt or os.urandom(16)
 
-        if not type(password) == bytes:
+        if type(password) != bytes:
             password = password.encode()
 
         password_hash = hashlib.pbkdf2_hmac('sha256', password, salt, rounds)
@@ -85,13 +85,12 @@ class PasswdAuthBackend:
     def _set_password(self, username, password, salt=None, rounds=100000,
                       old_password=''):
 
-        if old_password:
-            if not self._login(username, old_password)[0]:
-                return False
+        if old_password and not self._login(username, old_password)[0]:
+            return False
 
         salt = salt or os.urandom(16)
 
-        if not type(password) == bytes:
+        if type(password) != bytes:
             password = password.encode()
 
         password_hash = hashlib.pbkdf2_hmac('sha256', password, salt, rounds)
@@ -105,7 +104,7 @@ class PasswdAuthBackend:
         return True
 
     def _login(self, username, password):
-        if not type(password) == bytes:
+        if type(password) != bytes:
             password = password.encode()
 
         if username in self.user:
@@ -124,12 +123,11 @@ class PasswdAuthBackend:
         if hasattr(method, 'login_required') and not request.user:
             return False
 
-        if hasattr(method, 'permissions_required') and not (
-              len(request.permissions & method.permissions_required) ==
-              len(method.permissions_required)):
-            return False
-
-        return True
+        return bool(
+            not hasattr(method, 'permissions_required')
+            or len(request.permissions & method.permissions_required)
+            == len(method.permissions_required)
+        )
 
     def prepare_request(self, request):
         if not hasattr(request, 'user'):
@@ -173,8 +171,8 @@ class PasswdAuthBackend:
             username = request.params['username']
             password = request.params['password']
 
-        except(KeyError, TypeError):
-            raise RpcInvalidParamsError
+        except (KeyError, TypeError) as e:
+            raise RpcInvalidParamsError from e
 
         request.http_request.user, request.http_request.permissions = (
             await loop.run_in_executor(None, self._login, username, password))
@@ -201,8 +199,8 @@ class PasswdAuthBackend:
             username = request.params['username']
             password = request.params['password']
 
-        except (KeyError, TypeError):
-            raise RpcInvalidParamsError
+        except (KeyError, TypeError) as e:
+            raise RpcInvalidParamsError from e
 
         return (await loop.run_in_executor(None, self._create_user,
                                            username, password))
@@ -214,8 +212,8 @@ class PasswdAuthBackend:
         try:
             username = request.params['username']
 
-        except (KeyError, TypeError):
-            raise RpcInvalidParamsError
+        except (KeyError, TypeError) as e:
+            raise RpcInvalidParamsError from e
 
         return (await loop.run_in_executor(None, self._delete_user, username))
 
@@ -230,8 +228,8 @@ class PasswdAuthBackend:
             password = request.params['password']
             old_password = request.params.get('old_password', '')
 
-        except (KeyError, TypeError):
-            raise RpcInvalidParamsError
+        except (KeyError, TypeError) as e:
+            raise RpcInvalidParamsError from e
 
         return (await loop.run_in_executor(None, lambda: self._set_password(
                     username, password,

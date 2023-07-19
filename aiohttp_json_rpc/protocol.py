@@ -1,5 +1,5 @@
 from collections import namedtuple
-import json
+import orjson
 
 from .exceptions import (
     error_code_to_exception,
@@ -60,17 +60,17 @@ def decode_msg(raw_msg):
     """
 
     try:
-        msg_data = json.loads(raw_msg)
+        msg_data = orjson.loads(raw_msg)
 
-    except ValueError:
-        raise RpcParseError
+    except ValueError as e:
+        raise RpcParseError from e
 
     # check jsonrpc version
-    if 'jsonrpc' not in msg_data or not msg_data['jsonrpc'] == JSONRPC:
+    if 'jsonrpc' not in msg_data or msg_data['jsonrpc'] != JSONRPC:
         raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
     # check requierd fields
-    if not len(set(['error', 'result', 'method']) & set(msg_data)) == 1:
+    if len({'error', 'result', 'method'} & set(msg_data)) != 1:
         raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
     # find message type
@@ -102,12 +102,9 @@ def decode_msg(raw_msg):
         if 'id' not in msg_data:
             msg_data['id'] = None
 
-    # Response Objects
-    if msg_type in (JsonRpcMsgTyp.RESULT, JsonRpcMsgTyp.ERROR):
-
         # every Response object has to define an id
-        if 'id' not in msg_data:
-            raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
+    if 'id' not in msg_data and msg_type in (JsonRpcMsgTyp.RESULT, JsonRpcMsgTyp.ERROR):
+        raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
     # Error objects
     if msg_type == JsonRpcMsgTyp.ERROR:
@@ -117,11 +114,11 @@ def decode_msg(raw_msg):
             raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
         # the error field has to define 'code' and 'message'
-        if not len(set(['code', 'message']) & set(msg_data['error'])) == 2:
+        if len({'code', 'message'} & set(msg_data['error'])) != 2:
             raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
         # the error code has to be in the specified ranges
-        if not msg_data['error']['code'] in RpcError.lookup_table.keys():
+        if msg_data['error']['code'] not in RpcError.lookup_table.keys():
             raise RpcInvalidRequestError(msg_id=msg_data.get('id', None))
 
         # set empty 'data' field if not set
@@ -146,7 +143,7 @@ def encode_request(method, id=None, params=None):
     if params is not None:
         msg['params'] = params
 
-    return json.dumps(msg)
+    return orjson.dumps(msg, option=orjson.OPT_NON_STR_KEYS).decode()
 
 
 def encode_notification(method, params=None):
@@ -160,7 +157,7 @@ def encode_result(id, result):
         'result': result
     }
 
-    return json.dumps(msg)
+    return orjson.dumps(msg, option=orjson.OPT_NON_STR_KEYS).decode()
 
 
 def encode_error(error, id=None):
@@ -184,7 +181,7 @@ def encode_error(error, id=None):
     if error.data is not None:
         msg['error']['data'] = error.data
 
-    return json.dumps(msg)
+    return orjson.dumps(msg, option=orjson.OPT_NON_STR_KEYS).decode()
 
 
 def decode_error(msg: JsonRpcMsg):

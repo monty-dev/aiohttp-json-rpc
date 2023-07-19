@@ -38,10 +38,7 @@ class ThreadedWorkerPool:
 
         future = asyncio.run_coroutine_threadsafe(coro(), loop=self.loop)
 
-        if wait:
-            return future.result()
-
-        return future
+        return future.result() if wait else future
 
     def shutdown(self, wait=True):
         if self.executor:

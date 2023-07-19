@@ -20,9 +20,7 @@ class DjangoAuthBackend(AuthBackend):
 
     # Helper methods
     def get_user(self, request):
-        session_key = request.cookies.get('sessionid', '')
-
-        if session_key:
+        if session_key := request.cookies.get('sessionid', ''):
             try:
                 session = Session.objects.get(session_key=session_key)
                 uid = session.get_decoded().get('_auth_user_id')
@@ -86,8 +84,8 @@ class DjangoAuthBackend(AuthBackend):
 
             return [self.dump_model_object(i) for i in objects]
 
-        except Exception:
-            raise RpcInvalidParamsError
+        except Exception as e:
+            raise RpcInvalidParamsError from e
 
     async def _model_delete(self, request, model):
         lookups = request.msg.data['params'] or {}
@@ -98,8 +96,8 @@ class DjangoAuthBackend(AuthBackend):
         try:
             model.objects.filter(**lookups).delete()
 
-        except Exception:
-            raise RpcInvalidParamsError
+        except Exception as e:
+            raise RpcInvalidParamsError from e
 
         return True
 
@@ -114,8 +112,8 @@ class DjangoAuthBackend(AuthBackend):
 
             return self.dump_model_object(new_object)
 
-        except Exception:
-            raise RpcInvalidParamsError
+        except Exception as e:
+            raise RpcInvalidParamsError from e
 
     async def _model_change(self, request, model):
         try:
@@ -131,14 +129,14 @@ class DjangoAuthBackend(AuthBackend):
 
             return True
 
-        except KeyError:
-            raise RpcInvalidParamsError
+        except KeyError as e:
+            raise RpcInvalidParamsError from e
 
     async def handle_orm_call(self, request):
         method_name = request.msg.data['method'].split('__')[1]
         app_label, _ = method_name.split('.')
         action, model_name = _.split('_')
-        model = apps.get_model('{}.{}'.format(app_label, model_name))
+        model = apps.get_model(f'{app_label}.{model_name}')
 
         if action == 'view':
             return await self._model_view(request, model)
@@ -158,8 +156,8 @@ class DjangoAuthBackend(AuthBackend):
             username = str(request.params['username'])
             password = str(request.params['password'])
 
-        except(KeyError, TypeError, ValueError):
-            raise RpcInvalidParamsError
+        except (KeyError, TypeError, ValueError) as e:
+            raise RpcInvalidParamsError from e
 
         user = authenticate(username=username, password=password)
 
@@ -209,7 +207,7 @@ class DjangoAuthBackend(AuthBackend):
         if self.generic_orm_methods:
             for permission_name in request.user.get_all_permissions():
                 action = permission_name.split('.')[1].split('_')[0]
-                method_name = 'db__{}'.format(permission_name)
+                method_name = f'db__{permission_name}'
 
                 if action in ('view', 'add', 'change', 'delete', ):
                     request.methods[method_name] = JsonRpcMethod(

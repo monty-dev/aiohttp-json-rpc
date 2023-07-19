@@ -149,3 +149,4 @@ local.properties
 
 
 /.pytest_cache/
+.DS_Store
